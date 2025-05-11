@@ -1,0 +1,10 @@
+# Setup for ruby cli app
+# Ignore bundler config
+.bundle
+# Ignore all log files and temp files
+*.log
+*.tmp
+# Ignore all coverage files
+coverage/
+
+config.yml
