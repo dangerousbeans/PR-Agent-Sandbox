@@ -1,0 +1,9 @@
+github:
+  repo: your_org/your_repo
+  access_token: <YOUR_GITHUB_TOKEN>
+openai:
+  api_key: <YOUR_OPENAI_API_KEY>
+agents:
+  count: 3
+issue_watcher:
+  poll_interval: 60

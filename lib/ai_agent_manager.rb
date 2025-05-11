@@ -1,0 +1,6 @@
+require_relative 'ai_agent_manager/config'
+require_relative 'ai_agent_manager/github_client'
+require_relative 'ai_agent_manager/codex_client'
+require_relative 'ai_agent_manager/issue_watcher'
+require_relative 'ai_agent_manager/agent'
+require_relative 'ai_agent_manager/agent_manager'
