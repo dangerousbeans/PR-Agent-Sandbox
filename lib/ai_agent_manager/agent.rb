@@ -21,10 +21,12 @@ module AiAgentManager
           clone_repo
           branch_name = "agent-#{@id}-issue-#{issue_number}"
           create_branch(branch_name)
-          instructions = issue.body
-          patch = @codex.generate_patch(instructions, Dir.pwd, branch_name)
-          apply_patch(patch)
-          commit_and_push(branch_name)
+          instructions = issue.title + " " + (issue.body || "")
+
+          # manage the local codex cli in silent mode, instructing it to commit the changes when done
+          patch = @codex.generate_patch(instructions, dir, branch_name)
+
+
           pr = @github.create_pull_request(@repo,
                                            "Resolve issue ##{issue_number}",
                                            branch_name,
