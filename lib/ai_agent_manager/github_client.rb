@@ -2,7 +2,10 @@ require 'octokit'
 
 module AiAgentManager
   class GithubClient
+    attr_reader :access_token
+
     def initialize(access_token)
+      @access_token = access_token
       @client = Octokit::Client.new(access_token: access_token)
     end
 
@@ -15,7 +18,15 @@ module AiAgentManager
     end
 
     def create_branch(repo, branch_name, base_branch = 'main')
+      # Create a new branch on GitHub unless it already exists
       ref = "heads/#{branch_name}"
+      # Skip creation if the ref already exists
+      begin
+        @client.ref(repo, ref)
+        return
+      rescue Octokit::NotFound
+        # branch does not exist remotely; proceed to create it
+      end
       base_ref = @client.ref(repo, "heads/#{base_branch}")
       @client.create_ref(repo, ref, base_ref.object.sha)
     end

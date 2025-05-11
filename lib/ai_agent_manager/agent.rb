@@ -40,7 +40,13 @@ module AiAgentManager
     private
 
     def clone_repo
-      system("git clone https://github.com/#{@repo}.git .") or raise "Git clone failed"
+      token = @github.access_token
+      clone_url = if token && !token.empty?
+                    "https://#{token}@github.com/#{@repo}.git"
+                  else
+                    "https://github.com/#{@repo}.git"
+                  end
+      system("git", "clone", clone_url, ".") or raise "Git clone failed"
     end
 
     def create_branch(branch_name)

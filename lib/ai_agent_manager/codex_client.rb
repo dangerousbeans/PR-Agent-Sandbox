@@ -3,7 +3,7 @@ require 'openai'
 module AiAgentManager
   class CodexClient
     def initialize(api_key)
-      @client = OpenAI::Client.new(access_token: api_key)
+      @client = OpenAI::Client.new(api_key: api_key)
     end
 
     # Generate a git patch based on instructions and repository context
@@ -13,17 +13,16 @@ module AiAgentManager
         ### Instructions:
         #{instructions}
       PROMPT
-      response = @client.chat(
-        parameters: {
-          model: "gpt-4",
-          messages: [
-            { role: "system", content: "Generate a git patch for the following instructions." },
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.2
-        }
-      )
-      response.dig("choices", 0, "message", "content")
+      body = {
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: "Generate a git patch for the following instructions." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.2
+      }
+      response = @client.send(:post, "/v1/chat/completions", body: body)
+      response[:choices][0][:message][:content]
     end
   end
 end
