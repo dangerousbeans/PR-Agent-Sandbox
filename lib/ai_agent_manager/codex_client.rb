@@ -22,11 +22,7 @@ module AiAgentManager
       PROMPT
 
       Dir.chdir(repo_path) do
-        Open3.popen2e('codex', '-q', prompt, '--approval-mode', 'full-auto') do |stdin, stdout_err, wait_thr|
-          # send the prompt to codex
-          stdin.puts prompt
-          stdin.close
-
+        Open3.popen2e('codex', '-a', 'auto-edit', '--quiet', prompt) do |stdin, stdout_err, wait_thr|
           # stream each line as it arrives
           stdout_err.each do |line|
             $stdout.print line

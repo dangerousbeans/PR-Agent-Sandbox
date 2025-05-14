@@ -23,10 +23,10 @@ module AiAgentManager
           create_branch(branch_name)
           instructions = issue.title + " " + (issue.body || "")
 
-          # manage the local codex cli in silent mode, instructing it to commit the changes when done
-          patch = @codex.generate_patch(instructions, dir, branch_name)
-
-
+          # Use local codex CLI to generate and apply changes in the cloned repo
+          @codex.generate_patch(instructions, dir, branch_name)
+          # Commit the changes and push the branch
+          commit_and_push(branch_name)
           pr = @github.create_pull_request(@repo,
                                            "Resolve issue ##{issue_number}",
                                            branch_name,
@@ -62,9 +62,14 @@ module AiAgentManager
     end
 
     def commit_and_push(branch_name)
-      system('git add .')
-      system("git commit -m 'Apply changes for issue'")
-      system("git push origin #{branch_name}")
+      # Stage changes
+      system('git add .') or raise "Git add failed"
+      # Commit; if no changes, abort
+      unless system("git commit -m 'Apply changes for issue'")
+        raise "No changes to commit after applying patch"
+      end
+      # Push to remote
+      system("git push origin #{branch_name}") or raise "Git push failed"
     end
   end
 end
