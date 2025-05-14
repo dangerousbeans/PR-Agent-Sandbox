@@ -5,11 +5,6 @@ module AiAgentManager
     def initialize(config)
       @config = config
       @github = GithubClient.new(config.github_access_token)
-      
-
-
-
-
       @codex = CodexClient.new(config.openai_api_key)
       @repo = config.github_repo
       @queue = Queue.new

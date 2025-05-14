@@ -56,11 +56,6 @@ module AiAgentManager
       system("git checkout -b #{branch_name}") or raise "Git checkout failed"
     end
 
-    def apply_patch(patch)
-      File.write('changes.patch', patch)
-      system('git apply changes.patch') or raise "Git apply failed"
-    end
-
     def commit_and_push(branch_name)
       # Stage changes
       system('git add .') or raise "Git add failed"
