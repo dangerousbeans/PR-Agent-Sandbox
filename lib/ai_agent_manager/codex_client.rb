@@ -22,7 +22,8 @@ module AiAgentManager
       PROMPT
 
       Dir.chdir(repo_path) do
-        Open3.popen2e('codex', '-a', 'auto-edit', '--quiet', prompt) do |stdin, stdout_err, wait_thr|
+        # Use full-auto mode to automatically approve both edits and commands for non-interactive runs
+        Open3.popen2e('codex', '--dangerouslyAutoApproveEverything', '-q', prompt) do |stdin, stdout_err, wait_thr|
           # stream each line as it arrives
           stdout_err.each do |line|
             $stdout.print line
