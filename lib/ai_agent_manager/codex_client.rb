@@ -1,41 +1,99 @@
 require 'open3'
 require 'json'
+require 'openai'
 
 module AiAgentManager
   class CodexClient
-    # Initialize without remote API (using local codex CLI)
-    def initialize(_api_key = nil)
-      # noop: using local codex CLI instead of remote API
+    # Initialize with OpenAI API key for lightweight LLM tasks
+    def initialize(api_key = nil)
+      @openai_client = OpenAI::Client.new(api_key: api_key)
     end
 
-    # Generate a git patch based on instructions and repository context by invoking local codex CLI
-    # Streams output in real time to STDOUT instead of capturing it all at once.
-    #
+    # Execute Codex CLI to perform changes based on instructions and repository context.
+    # Returns an array of output lines captured from the CLI run.
     # instructions: user issue body
     # repo_path:    path to repository
-    # branch_name:  (not used here, but you could use it to name your branch/patch file)
-    def generate_patch(instructions, repo_path, branch_name)
+    # branch_name:  suggested branch name (provided to the CLI for context)
+    def run_codex_cli(instructions, repo_path, branch_name)
       prompt = <<~PROMPT
         You are an AI coding assistant. Given the repository at #{repo_path} and user instructions, carry out the work to implement the change. Test if appropriate. Commit once done.
         ### Instructions:
         #{instructions}
       PROMPT
 
+      output_lines = []
       Dir.chdir(repo_path) do
         # Use full-auto mode to automatically approve both edits and commands for non-interactive runs
-        Open3.popen2e('codex', '--dangerouslyAutoApproveEverything', '-q', prompt) do |stdin, stdout_err, wait_thr|
-          # stream each line as it arrives
+        Open3.popen2e('codex', '--dangerouslyAutoApproveEverything', '-q', prompt) do |_in, stdout_err, wait_thr|
           stdout_err.each do |line|
             $stdout.print line
+            output_lines << line.chomp
           end
 
-          # check status when finished
           status = wait_thr.value
           unless status.success?
             raise "Codex CLI failed (exit #{status.exitstatus})"
           end
         end
       end
+      output_lines
+    end
+
+    # Generate a concise, hyphen-separated git branch name based on task instructions using OpenAI
+    def generate_branch_name(instructions)
+      system_prompt = 'You are an AI assistant that suggests concise, hyphen-separated git branch names.'
+      response = @openai_client.chat(
+        parameters: {
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: system_prompt },
+            { role: 'user', content: instructions }
+          ],
+          temperature: 0.3,
+          max_tokens: 10
+        }
+      )
+      text = response.dig('choices', 0, 'message', 'content') || ''
+      name = text.lines.first || text
+      name.strip.downcase.gsub(/[^\w\s-]/, '').gsub(/\s+/, '-').gsub(/-+/, '-')
+    end
+
+    # Generate a concise git commit message based on task instructions using OpenAI
+    def generate_commit_message(instructions)
+      system_prompt = 'You are an AI assistant. Write a concise commit message in imperative mood describing the requested changes.'
+      response = @openai_client.chat(
+        parameters: {
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: system_prompt },
+            { role: 'user', content: instructions }
+          ],
+          temperature: 0.3,
+          max_tokens: 50
+        }
+      )
+      text = response.dig('choices', 0, 'message', 'content') || ''
+      text.lines.map(&:strip).find { |l| !l.empty? } || text.strip
+    end
+
+    # Summarize the patch output using OpenAI
+    # patch_lines: array of strings from codex CLI output
+    def summarize_patch_output(patch_lines)
+      system_prompt = 'You are an AI assistant. Given lines of output from a code generation tool, summarize the changes that were applied.'
+      content = patch_lines.join("\n")
+      response = @openai_client.chat(
+        parameters: {
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: system_prompt },
+            { role: 'user', content: content }
+          ],
+          temperature: 0.3,
+          max_tokens: 150
+        }
+      )
+      text = response.dig('choices', 0, 'message', 'content') || ''
+      text.strip
     end
   end
 end

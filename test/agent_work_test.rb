@@ -62,6 +62,7 @@ class DummyCodexClient
     @calls << [instructions, dir, branch_name]
     File.open(File.join(dir, 'file.txt'), 'a') { |f| f.write("patch\n") }
   end
+  alias run_codex_cli generate_patch
 end
 
 class AgentWorkTest < Minitest::Test
