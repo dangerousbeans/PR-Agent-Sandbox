@@ -6,7 +6,7 @@ module AiAgentManager
   class CodexClient
     # Initialize with OpenAI API key for lightweight LLM tasks
     def initialize(api_key = nil)
-      @openai_client = OpenAI::Client.new(api_key: api_key)
+      @openai_client = OpenAI::Client.new(access_token: api_key)
     end
 
     # Execute Codex CLI to perform changes based on instructions and repository context.
@@ -41,7 +41,7 @@ module AiAgentManager
 
     # Generate a concise, hyphen-separated git branch name based on task instructions using OpenAI
     def generate_branch_name(instructions)
-      system_prompt = 'You are an AI assistant that suggests concise, hyphen-separated git branch names.'
+      system_prompt = 'You are an AI assistant that suggests concise, hyphen-separated git branch names. Only return the branch name. Just one.'
       response = @openai_client.chat(
         parameters: {
           model: 'gpt-3.5-turbo',
@@ -54,8 +54,9 @@ module AiAgentManager
         }
       )
       text = response.dig('choices', 0, 'message', 'content') || ''
-      name = text.lines.first || text
-      name.strip.downcase.gsub(/[^\w\s-]/, '').gsub(/\s+/, '-').gsub(/-+/, '-')
+      
+      puts "Branch name: #{text}"
+      text
     end
 
     # Generate a concise git commit message based on task instructions using OpenAI
@@ -73,13 +74,14 @@ module AiAgentManager
         }
       )
       text = response.dig('choices', 0, 'message', 'content') || ''
-      text.lines.map(&:strip).find { |l| !l.empty? } || text.strip
+      puts "Commit message: #{text}"
+      text
     end
 
     # Summarize the patch output using OpenAI
     # patch_lines: array of strings from codex CLI output
     def summarize_patch_output(patch_lines)
-      system_prompt = 'You are an AI assistant. Given lines of output from a code generation tool, summarize the changes that were applied.'
+      system_prompt = 'You are an AI assistant. Summarize the changes that were applied.'
       content = patch_lines.join("\n")
       response = @openai_client.chat(
         parameters: {
@@ -93,7 +95,8 @@ module AiAgentManager
         }
       )
       text = response.dig('choices', 0, 'message', 'content') || ''
-      text.strip
+      puts "Summary: #{text}"
+      text
     end
   end
 end

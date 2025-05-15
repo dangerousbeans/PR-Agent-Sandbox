@@ -15,7 +15,13 @@ module AiAgentManager
         loop do
           issues = @github_client.list_open_issues(@repo)
           issues.each do |issue|
-            unless @known_issues[issue.number]
+            # Skip issues already enqueued
+            next if @known_issues[issue.number]
+            # Only pick up if the last comment isn't an agent claim (by message) to avoid re-taking claimed issues
+            comments = @github_client.list_comments(@repo, issue.number)
+            last_comment = comments.last
+            # Enqueue if no comments or last comment does not start with our agent prefix
+            if last_comment.nil? || !last_comment.body.start_with?("Agent ")
               @known_issues[issue.number] = true
               @queue << issue
             end

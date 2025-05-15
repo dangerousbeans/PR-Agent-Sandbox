@@ -11,3 +11,5 @@ config.yml
 
 Gemfile.lock
 .aider*
+
+/vendor

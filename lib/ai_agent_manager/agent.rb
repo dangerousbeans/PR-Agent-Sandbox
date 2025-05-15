@@ -29,7 +29,7 @@ module AiAgentManager
         end
         create_branch(branch_name)
         # Use local codex CLI to perform the change run, capturing output
-        patch_output = @codex.run_codex_cli(instructions, dir, branch_name)
+        @codex.run_codex_cli(instructions, dir, branch_name)
         # Generate commit message via LLM if supported, else use default
         if @codex.respond_to?(:generate_commit_message)
           commit_message = @codex.generate_commit_message(instructions)
@@ -39,9 +39,14 @@ module AiAgentManager
         # Commit the changes and push the branch
         commit_and_push(branch_name, commit_message)
         # Prepare PR body, optionally include a summary of the patch output
+
+        # diff output
+        patch_output = `git diff origin/#{@base_branch}..#{branch_name}`
+
         if @codex.respond_to?(:summarize_patch_output)
           # Summarize only the last 20 lines of the patch output
-          summary = @codex.summarize_patch_output(patch_output.last(20))
+          last_lines = patch_output.lines.last(20).join
+          summary = @codex.summarize_patch_output(last_lines)
           pr_body = "Closes ##{issue_number}\n\nSummary of changes:\n#{summary}"
         else
           pr_body = "Closes ##{issue_number}"

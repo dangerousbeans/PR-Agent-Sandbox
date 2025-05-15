@@ -38,5 +38,15 @@ module AiAgentManager
     def issue_comment_count(repo, issue_number)
       @client.issue_comments(repo, issue_number).size
     end
+    
+    # List comments for an issue (in chronological order)
+    def list_comments(repo, issue_number)
+      @client.issue_comments(repo, issue_number)
+    end
+
+    # Return the login of the authenticated user
+    def current_user_login
+      @client.user.login
+    end
   end
 end
